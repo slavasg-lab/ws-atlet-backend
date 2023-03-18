@@ -18,11 +18,11 @@ export class EventsHandler {
 
         const { event, data } = parsed;
 
-        console.log("this", this);
-        const user = await this.usersService.findUserByPublicKey(
-          "ed25519:73g5FkDR5f9onJM7goQEZFMZZTH53Gv4cGAaEeEoQgDW",
-        );
-        console.log(user);
+        // console.log("this", this);
+        // const user = await this.usersService.findUserByPublicKey(
+        //   "ed25519:73g5FkDR5f9onJM7goQEZFMZZTH53Gv4cGAaEeEoQgDW",
+        // );
+        // console.log(user);
 
         // ~ controller
         if (event === ClientToServerEvents.sessionCreationRequested)

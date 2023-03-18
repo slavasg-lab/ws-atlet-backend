@@ -34,15 +34,7 @@ const startWSS = async () => {
   const sessionsService = new SessionsService(prisma);
 
   const eventsHandler = new EventsHandler(usersService, sessionsService);
-  const user1 = await eventsHandler.usersService.findUserByPublicKey(
-    "ed25519:73g5FkDR5f9onJM7goQEZFMZZTH53Gv4cGAaEeEoQgDW",
-  );
-  const user2 = await usersService.findUserByPublicKey(
-    "ed25519:73g5FkDR5f9onJM7goQEZFMZZTH53Gv4cGAaEeEoQgDW",
-  );
-  console.log("user1", user1);
-  console.log("user2", user2);
-  wss.on("connection", (eventsHandler as EventsHandler).handleConnection);
+  wss.on("connection", eventsHandler.handleConnection);
 
   return wss;
 };
