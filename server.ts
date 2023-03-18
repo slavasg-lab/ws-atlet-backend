@@ -1,5 +1,8 @@
+import { Prisma, PrismaClient } from "@prisma/client";
 import { WebSocketServer } from "ws";
-import eventsHandler from "./src/handlers/events.handler";
+import { EventsHandler } from "./src/handlers/events.handler";
+
+const prisma = new PrismaClient();
 
 const wss = new WebSocketServer({
   port: 8080,
@@ -23,6 +26,8 @@ const wss = new WebSocketServer({
     // should not be compressed if context takeover is disabled.
   },
 });
+
+const eventsHandler = new EventsHandler(prisma);
 
 wss.on("connection", eventsHandler.handleConnection);
 

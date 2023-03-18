@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Models For Session-Related Business Logic
+
+enum Sensor {
+  ACCELEROMETER
+  GYROSCOPE
+  MAGNETOMETER
+}
+
+// A sensor reading must always have a session
+model SensorReading {
+  id        Int      @default(autoincrement())
+  session   Session  @relation(fields: [sessionId], references: [id])
+  sessionId Int
+  timestamp DateTime
+  sensor    Sensor
+  xAxis     Float
+  yAxis     Float
+  zAxis     Float
+
+  @@unique([id, timestamp])
+}
+
+// A session must always have a user
+// A session can have zero or more sensor readings
+model Session {
+  id             Int             @id @default(autoincrement())
+  user           User            @relation(fields: [userId], references: [id])
+  userId         Int
+  createdAt      DateTime        @default(now())
+  destroyedAt    DateTime?
+  sensorReadings SensorReading[]
+}
+
+// Models For Session-Related Business Logic
+
+enum Role {
+  ADMIN
+  BETATESTER
+}
+
+// A user can have zero or more sessions
+model User {
+  id             Int       @id @default(autoincrement())
+  name           String
+  publicKey      String    @unique
+  email          String    @unique
+  role           Role
+  sessions       Session[]
+  sequenceNumber Int       @default(0)
+}

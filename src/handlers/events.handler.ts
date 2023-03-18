@@ -1,9 +1,20 @@
 import { WebSocket } from "ws";
+import { PrismaClient } from "@prisma/client";
 
-import { ClientToServerEvents } from "../types/Events";
+import { ClientToServerEvents } from "../types/WebSocket/Events";
 import messageValidator from "../middlewares/message-validator.middleware";
+import { UsersService } from "../services/users.service";
+import { SessionsService } from "../services/sessions.service";
 
-class EventsHandler {
+export class EventsHandler {
+  private readonly usersService: UsersService;
+  private readonly sessionsService: SessionsService;
+
+  constructor(prisma: PrismaClient) {
+    this.usersService = new UsersService(prisma);
+    this.sessionsService = new SessionsService(prisma);
+  }
+
   async handleConnection(ws: WebSocket) {
     ws.on("message", async (rawMessage) => {
       // ~ validation of message
@@ -24,5 +35,3 @@ class EventsHandler {
   async handleWriteSensorReadings() {}
   async handleDestroySession() {}
 }
-
-export default new EventsHandler();

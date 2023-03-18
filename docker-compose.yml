@@ -1,0 +1,13 @@
+# Set the version of docker compose to use
+version: '3.9'
+
+# The containers that compose the project
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: timescaledb
+      POSTGRES_PASSWORD: timescaledb
