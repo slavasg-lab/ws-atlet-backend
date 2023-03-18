@@ -1,4 +1,7 @@
+import { Prisma, PrismaClient } from '@prisma/client'
 import { WebSocketServer } from "ws";
+
+const prisma = new PrismaClient()
 
 const wss = new WebSocketServer({
   port: 8080,
