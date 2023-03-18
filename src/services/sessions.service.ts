@@ -1,11 +1,11 @@
-import { Session, SensorReading, PrismaClient } from '@prisma/client';
-import { SensorReadingWithoutIds } from '@/types/types';
+import { Session, SensorReading, PrismaClient } from "@prisma/client";
+import { SensorReadingWithoutIds } from "@/types/types";
+
+import { prisma } from "./db";
 
 export class SessionsService {
-  constructor(private prisma: PrismaClient) {}
-
   async createSession(userId: number): Promise<Session> {
-    return this.prisma.session.create({
+    return prisma.session.create({
       data: {
         userId: userId,
       },
@@ -16,7 +16,7 @@ export class SessionsService {
     sessionId: number,
     sensorReadings: SensorReadingWithoutIds[],
   ): Promise<number> {
-    return this.prisma.sensorReading
+    return prisma.sensorReading
       .createMany({
         data: sensorReadings.map((sensorReading) => {
           return {
@@ -35,17 +35,13 @@ export class SessionsService {
   }
 
   async findSessionById(sessionId: number): Promise<Session | null> {
-    return this.prisma.session.findUnique({
+    return prisma.session.findUnique({
       where: { id: sessionId },
     });
   }
 
-  async fetchSessionsForUser(
-    userId: number,
-    take?: number,
-    skip?: number,
-  ): Promise<Session[]> {
-    return this.prisma.session.findMany({
+  async fetchSessionsForUser(userId: number, take?: number, skip?: number): Promise<Session[]> {
+    return prisma.session.findMany({
       where: { userId },
       take,
       skip,
@@ -57,7 +53,7 @@ export class SessionsService {
     take?: number,
     skip?: number,
   ): Promise<SensorReading[]> {
-    return this.prisma.sensorReading.findMany({
+    return prisma.sensorReading.findMany({
       where: { sessionId },
       take,
       skip,
@@ -65,7 +61,7 @@ export class SessionsService {
   }
 
   async destroySession(sessionId: number): Promise<Session> {
-    return this.prisma.session.update({
+    return prisma.session.update({
       where: { id: sessionId },
       data: {
         destroyedAt: new Date(),
