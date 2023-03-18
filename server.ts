@@ -1,4 +1,5 @@
 import { WebSocketServer } from "ws";
+import eventsHandler from "./src/handlers/events.handler";
 
 const wss = new WebSocketServer({
   port: 8080,
@@ -23,10 +24,6 @@ const wss = new WebSocketServer({
   },
 });
 
-wss.on("connection", function connection(ws) {
-  ws.on("error", console.error);
-
-  console.log("CONNECTED");
-});
+wss.on("connection", eventsHandler.handleConnection);
 
 console.log("WSS STARTED");
