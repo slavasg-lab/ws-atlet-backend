@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "jest --watch --verbose false",
-    "build": "tsc",
+    "build": "rimraf dist && tsc",
     "start": "npm run build && node dist/server.js",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"
@@ -17,6 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^4.11.0",
+    "rimraf": "^4.4.0",
     "ws": "^8.13.0",
     "zod": "^3.21.4"
   },

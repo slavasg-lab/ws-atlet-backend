@@ -1,14 +1,8 @@
 import { WebSocket } from "ws";
 
-export function waitForSocketState(client: WebSocket, state: number) {
+export function waitForSocketConnection(client: WebSocket) {
   return new Promise<void>(function (resolve) {
-    setTimeout(function () {
-      if (client.readyState === state) {
-        resolve();
-      } else {
-        waitForSocketState(client, state).then(resolve);
-      }
-    }, 5);
+    client.on("open", () => resolve());
   });
 }
 
