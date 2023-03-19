@@ -1,5 +1,5 @@
 import { Session, SensorReading, PrismaClient } from "@prisma/client";
-import { SensorReadingWithoutIds } from "@/types/types";
+import { SensorReadingWithoutIds } from "@/types_legacy/types";
 
 import { prisma } from "./db";
 

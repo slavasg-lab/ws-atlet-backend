@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import handlers from "./src/handlers";
 import { InvalidEventDataError, InvalidMessageError, RejectionEvent } from "./src/errors";
-import { Event } from "./src/types/types";
+import { Event, Handler } from "./src/types/types";
 
 const wss = new WebSocketServer({
   port: 8080,
@@ -28,54 +28,48 @@ const wss = new WebSocketServer({
   },
 });
 
-// const eventsHandler = new EventsHandler();
-wss.on("connection", function connection(ws) {
-  ws.on("error", console.error);
+initSocketEvents(wss);
 
-  ws.on("message", async function message(rawMessage: RawData) {
-    let handler;
-    try {
-      const { event, data } = parseRawMessage(rawMessage);
+export function initSocketEvents(wss: WebSocketServer) {
+  wss.on("connection", function connection(ws) {
+    ws.on("error", console.error);
 
-      // get event handler, throw error otherwise
-      handler = handlers.get(event);
-      if (!handler) {
-        throw Error(`[WARNING] No handler for ${event} event found.`);
+    ws.on("message", async function message(rawMessage: RawData) {
+      let handler;
+      try {
+        const { event, data } = parseRawMessage(rawMessage);
+
+        // get event handler, throw error otherwise
+        handler = handlers.get(event);
+
+        // !!! Rethink about it
+        if (!handler) {
+          throw Error(`[WARNING] No handler for ${event} event found.`);
+        }
+
+        // validate event data
+        const input = validateData(handler, data);
+        // execute handler, throw error otherwise
+        const result = await handler.execute(input);
+        return sendMessage(ws, handler.event, result);
+      } catch (error) {
+        if (error instanceof InvalidMessageError) {
+          // return sendErrorMessage(ws, ???, "The message has invalid schema")
+        }
+        if (error instanceof InvalidEventDataError) {
+          return sendErrorMessage(ws, handler.event, 'The "data" field has invalid schema');
+        }
+        if (error instanceof RejectionEvent) {
+          const { description } = error;
+
+          return sendErrorMessage(ws, handler.event, description);
+        }
+        console.error(error);
+        process.exit(1);
       }
-
-      // validate event data
-      const input = handler.event.data.schema.parse(data);
-
-      // execute handler, throw error otherwise
-      const result = await handler.execute(input);
-      sendMessage(ws, handler.event, result);
-    } catch (error) {
-      if (error instanceof InvalidMessageError) {
-        // sendErrorMessage(ws, ???, "The message has invalid schema")
-      }
-      if (error instanceof InvalidEventDataError) {
-        sendErrorMessage(ws, handler.event, 'The "data" field has invalid schema');
-      }
-      if (error instanceof RejectionEvent) {
-        const { event, description } = error;
-
-        return ws.send(
-          JSON.stringify({
-            event: event.name,
-            data: {
-              ok: false,
-              description,
-            },
-          }),
-        );
-      }
-      console.error(error);
-      process.exit(1);
-    }
+    });
   });
-
-  ws.send("something");
-});
+}
 
 function parseRawMessage(rawMessage: RawData) {
   try {
@@ -84,6 +78,14 @@ function parseRawMessage(rawMessage: RawData) {
     return z.object({ event: z.string(), data: z.unknown() }).parse(message);
   } catch (error) {
     throw new InvalidMessageError();
+  }
+}
+
+function validateData(handler: Handler, data: unknown) {
+  try {
+    return handler.event.data.schema.parse(data);
+  } catch (error) {
+    throw new InvalidEventDataError();
   }
 }
 

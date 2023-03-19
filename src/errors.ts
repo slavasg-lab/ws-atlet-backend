@@ -5,7 +5,7 @@ interface Event {
 }
 
 export class RejectionEvent extends Error {
-  constructor(public event: Event, public description: string) {
+  constructor(public description: string) {
     super();
 
     // 👇 because we are extending a built-in class

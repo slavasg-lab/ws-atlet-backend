@@ -1,12 +1,7 @@
-import { WebSocket } from "ws";
 import { z } from "zod";
+
 import { RejectionEvent } from "../errors";
 
-interface SessionCreationRequestedData {}
-
-// TO DO
-// Find a way to stringify zod object schema
-// Store zod schema in event.data.schema
 
 export const event = {
   name: "session_creation_requested",
@@ -26,7 +21,7 @@ export async function execute(input: Input) {
   //   raise error (event: { name, description }) => throw
   //
   console.log(input);
-  throw new RejectionEvent(event, "Session already exists");
+  throw new RejectionEvent("Session already exists");
 
   return {
     sessionId: 0,

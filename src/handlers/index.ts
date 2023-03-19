@@ -2,9 +2,14 @@ import * as path from "path";
 import * as fs from "fs";
 
 const handlersPath = path.join(__dirname, "./");
+// for test we must include .ts extensions???
 const handlerFiles = fs
   .readdirSync(handlersPath)
-  .filter((file) => file.endsWith(".js") && file !== "index.js");
+  .filter(
+    (file) =>
+      (file.endsWith(".js") && file !== "index.js") ||
+      (file.endsWith(".ts") && file !== "index.ts" && !file.endsWith(".d.ts")),
+  );
 
 const handlers = new Map();
 

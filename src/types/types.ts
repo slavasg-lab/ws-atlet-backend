@@ -6,3 +6,8 @@ export interface Event {
     schema: z.AnyZodObject;
   };
 }
+
+export interface Handler {
+  event: Event;
+  execute: () => Record<string, string>;
+}
