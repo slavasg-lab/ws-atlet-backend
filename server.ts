@@ -1,8 +1,9 @@
-import { WebSocketServer, RawData } from "ws";
+import { WebSocketServer, RawData, WebSocket } from "ws";
 import { z } from "zod";
-import { ClientToServerEvents } from "./src/types/WebSocket/Events";
+
 import handlers from "./src/handlers";
-import { CustomError } from "./src/errors";
+import { InvalidEventDataError, InvalidMessageError, RejectionEvent } from "./src/errors";
+import { Event } from "./src/types/types";
 
 const wss = new WebSocketServer({
   port: 8080,
@@ -32,19 +33,41 @@ wss.on("connection", function connection(ws) {
   ws.on("error", console.error);
 
   ws.on("message", async function message(rawMessage: RawData) {
+    let handler;
     try {
       const { event, data } = parseRawMessage(rawMessage);
+
       // get event handler, throw error otherwise
-      const handler = handlers.get(event);
+      handler = handlers.get(event);
       if (!handler) {
         throw Error(`[WARNING] No handler for ${event} event found.`);
       }
+
+      // validate event data
+      const input = handler.event.data.schema.parse(data);
+
       // execute handler, throw error otherwise
-      await handler.execute(ws, data);
+      const result = await handler.execute(input);
+      sendMessage(ws, handler.event, result);
     } catch (error) {
-      if (error instanceof CustomError) {
+      if (error instanceof InvalidMessageError) {
+        // sendErrorMessage(ws, ???, "The message has invalid schema")
+      }
+      if (error instanceof InvalidEventDataError) {
+        sendErrorMessage(ws, handler.event, 'The "data" field has invalid schema');
+      }
+      if (error instanceof RejectionEvent) {
         const { event, description } = error;
-        return ws.send(JSON.stringify({ event, data: { ok: false, description } }));
+
+        return ws.send(
+          JSON.stringify({
+            event: event.name,
+            data: {
+              ok: false,
+              description,
+            },
+          }),
+        );
       }
       console.error(error);
       process.exit(1);
@@ -55,7 +78,35 @@ wss.on("connection", function connection(ws) {
 });
 
 function parseRawMessage(rawMessage: RawData) {
-  const message = JSON.parse(rawMessage.toString());
-  z.object({ event: z.nativeEnum(ClientToServerEvents) }).parse(message);
-  return message;
+  try {
+    const message = JSON.parse(rawMessage.toString());
+
+    return z.object({ event: z.string(), data: z.unknown() }).parse(message);
+  } catch (error) {
+    throw new InvalidMessageError();
+  }
+}
+
+function sendMessage(ws: WebSocket, event: Event, result: unknown) {
+  return ws.send(
+    JSON.stringify({
+      event: event.name,
+      data: {
+        ok: true,
+        result,
+      },
+    }),
+  );
+}
+
+function sendErrorMessage(ws: WebSocket, event: Event, description: string) {
+  return ws.send(
+    JSON.stringify({
+      event: event.name,
+      data: {
+        ok: false,
+        description,
+      },
+    }),
+  );
 }
