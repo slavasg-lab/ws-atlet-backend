@@ -1,10 +1,10 @@
 import { WebSocket } from "ws";
 
-export function waitForSocketConnection(client: WebSocket) {
-  return new Promise<void>(function (resolve) {
-    client.on("open", () => resolve());
-  });
-}
+// export function waitForSocketConnection(client: WebSocket) {
+//   return new Promise<void>(function (resolve) {
+//     client.on("open", () => resolve());
+//   });
+// }
 
 export function sendSocketMessageAndWaitForResponse(client: WebSocket, message: string) {
   return new Promise<unknown>(function (resolve) {

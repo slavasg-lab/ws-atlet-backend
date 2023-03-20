@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "jest --watch --verbose false",
+    "test": "npm run build && jest --watch --verbose false",
     "build": "rimraf dist && tsc",
     "start": "npm run build && node dist/server.js",
     "docker:up": "docker-compose up -d",
@@ -37,8 +37,8 @@
       "json",
       "ts"
     ],
-    "rootDir": "test",
-    "testRegex": ".*\\.spec\\.ts$",
+    "rootDir": "dist/test",
+    "testRegex": ".*\\.spec\\.js$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },

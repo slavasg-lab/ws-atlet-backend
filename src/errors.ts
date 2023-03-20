@@ -20,6 +20,13 @@ export class InvalidMessageError extends Error {
   }
 }
 
+export class InvalidEventNameError extends Error {
+  constructor() {
+    super();
+    Object.setPrototypeOf(this, RejectionEvent.prototype);
+  }
+}
+
 export class InvalidEventDataError extends Error {
   constructor() {
     super();

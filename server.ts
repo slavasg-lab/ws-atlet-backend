@@ -2,7 +2,12 @@ import { WebSocketServer, RawData, WebSocket } from "ws";
 import { z } from "zod";
 
 import handlers from "./src/handlers";
-import { InvalidEventDataError, InvalidMessageError, RejectionEvent } from "./src/errors";
+import {
+  InvalidEventDataError,
+  InvalidEventNameError,
+  InvalidMessageError,
+  RejectionEvent,
+} from "./src/errors";
 import { Event, Handler } from "./src/types/types";
 
 const wss = new WebSocketServer({
@@ -28,48 +33,53 @@ const wss = new WebSocketServer({
   },
 });
 
-initSocketEvents(wss);
+wss.on("connection", function connection(ws) {
+  ws.on("error", console.error);
 
-export function initSocketEvents(wss: WebSocketServer) {
-  wss.on("connection", function connection(ws) {
-    ws.on("error", console.error);
+  ws.on("message", async function message(rawMessage: RawData) {
+    let handler;
+    try {
+      const { event, data } = parseRawMessage(rawMessage);
 
-    ws.on("message", async function message(rawMessage: RawData) {
-      let handler;
-      try {
-        const { event, data } = parseRawMessage(rawMessage);
+      // get event handler, throw error otherwise
+      handler = handlers.get(event);
 
-        // get event handler, throw error otherwise
-        handler = handlers.get(event);
-
-        // !!! Rethink about it
-        if (!handler) {
-          throw Error(`[WARNING] No handler for ${event} event found.`);
-        }
-
-        // validate event data
-        const input = validateData(handler, data);
-        // execute handler, throw error otherwise
-        const result = await handler.execute(input);
-        return sendMessage(ws, handler.event, result);
-      } catch (error) {
-        if (error instanceof InvalidMessageError) {
-          // return sendErrorMessage(ws, ???, "The message has invalid schema")
-        }
-        if (error instanceof InvalidEventDataError) {
-          return sendErrorMessage(ws, handler.event, 'The "data" field has invalid schema');
-        }
-        if (error instanceof RejectionEvent) {
-          const { description } = error;
-
-          return sendErrorMessage(ws, handler.event, description);
-        }
-        console.error(error);
-        process.exit(1);
+      // !!! Rethink about it
+      if (!handler) {
+        throw new InvalidEventNameError();
+        // throw Error(`[WARNING] No handler for ${event} event found.`);
       }
-    });
+
+      // validate event data
+      let input;
+      try {
+        input = handler.event.data.schema.parse(data);
+      } catch (error) {
+        throw new InvalidEventDataError();
+      }
+
+      // execute handler, throw error otherwise
+      const result = await handler.execute(input);
+      return sendMessage(ws, handler.event.name, result);
+    } catch (error) {
+      if (error instanceof InvalidMessageError) {
+        return sendErrorMessage(ws, "invalid_message_received", "The message has invalid schema");
+      }
+      if (error instanceof InvalidEventNameError) {
+        return sendErrorMessage(ws, "invalid_event_received", "The event is not found");
+      }
+      if (error instanceof InvalidEventDataError) {
+        return sendErrorMessage(ws, handler.event.name, 'The "data" field has invalid schema');
+      }
+      if (error instanceof RejectionEvent) {
+        return sendErrorMessage(ws, handler.event.name, error.description);
+      }
+
+      console.error(error);
+      process.exit(1);
+    }
   });
-}
+});
 
 function parseRawMessage(rawMessage: RawData) {
   try {
@@ -81,18 +91,10 @@ function parseRawMessage(rawMessage: RawData) {
   }
 }
 
-function validateData(handler: Handler, data: unknown) {
-  try {
-    return handler.event.data.schema.parse(data);
-  } catch (error) {
-    throw new InvalidEventDataError();
-  }
-}
-
-function sendMessage(ws: WebSocket, event: Event, result: unknown) {
+function sendMessage(ws: WebSocket, eventName: string, result: unknown) {
   return ws.send(
     JSON.stringify({
-      event: event.name,
+      event: eventName,
       data: {
         ok: true,
         result,
@@ -101,10 +103,10 @@ function sendMessage(ws: WebSocket, event: Event, result: unknown) {
   );
 }
 
-function sendErrorMessage(ws: WebSocket, event: Event, description: string) {
+function sendErrorMessage(ws: WebSocket, eventName: string, description: string) {
   return ws.send(
     JSON.stringify({
-      event: event.name,
+      event: eventName,
       data: {
         ok: false,
         description,
@@ -112,3 +114,5 @@ function sendErrorMessage(ws: WebSocket, event: Event, description: string) {
     }),
   );
 }
+
+export default wss;

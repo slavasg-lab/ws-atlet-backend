@@ -1,20 +1,17 @@
 import * as WebSocket from "ws";
-import { initSocketEvents } from "../server";
-import { sendSocketMessageAndWaitForResponse, waitForSocketConnection } from "./utils/utils";
+
+import wss from "../server";
+import { sendSocketMessageAndWaitForResponse } from "./utils/utils";
 
 const port = 437;
 
 describe("Wrong Message Test", function () {
   let client: WebSocket.WebSocket;
 
-  beforeAll(async function () {
-    // init server
-    const wss = new WebSocket.WebSocketServer({ port });
-    initSocketEvents(wss);
-
+  beforeAll(function () {
     // init client
     client = new WebSocket(`ws://localhost:${port}`);
-    await waitForSocketConnection(client);
+    // client.readyState - получение статуса сокета (client.OPEN/client.CLOSED/OPENING/CLOSING)
   });
 
   afterAll(function () {
@@ -22,6 +19,9 @@ describe("Wrong Message Test", function () {
   });
 
   test("should reject because of the incorrect data", async function () {
+    client.on("open", () => {
+      expect(5).toBe(5);
+    });
     const event = "session_creation_requested";
     const data = {};
 
@@ -31,7 +31,5 @@ describe("Wrong Message Test", function () {
     );
 
     console.log("RESPONSE", response);
-
-    expect(typeof 5).toBe("number");
   });
 });
